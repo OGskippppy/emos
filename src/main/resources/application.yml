@@ -1,14 +1,19 @@
 # ??tomcat???
 server:
+  port: 8080
+  servlet:
+    context-path: /emos-wx-api
   tomcat:
     uri-encoding: UTF-8
     connection-timeout: 5000ms
     threads:
       max: 200
       min-spare: 30
-    port: 8080
-    servlet:
-      context_path: /emo-wx-api
+
+springfox:
+  documentation:
+    swagger-ui:
+      path: /swagger-ui.html
 
 #??mysql???
 spring:
@@ -26,8 +31,10 @@ spring:
       test-while-idle: true
       test-on-borrow: false
       test-on-return: false
-
-#??redis???
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+  #??redis???
   data:
     redis:
       database: 0
@@ -39,7 +46,7 @@ spring:
           max-idle: 16
           max-wait: -1ms
           min-idle: 8
-#  ??mongoDB???
+    #  ??mongoDB???
     mongodb:
       host: localhost
       port: 27017
@@ -47,9 +54,43 @@ spring:
       username: admin
       password: abc123456
       authentication-database: admin
+  # Quartz ????
+  quartz:
+    job-store-type: memory
+    auto-startup: true
+    overwrite-existing-jobs: true
+    wait-for-jobs-to-complete-on-shutdown: true
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: EmosScheduler
+            instanceId: AUTO
+          threadPool:
+            threadCount: 10
+          jobStore:
+            class: org.quartz.simpl.RAMJobStore
+
+emos:
+  jwt:
+      secret: li123
+      expire: 480
+      cache-expire: 600
+  face:
+    createFaceModelUrl: http://192.168.1.8:3000/create_face_model
+    checkinUrl: http://192.168.1.8:3000/checkin
+    code: 974038F061B0B5F61111
+  image-folder: D:/emos/image
+  recieveNotify: http://192.168.1.6:8080/emos-wx-api/meeting/recieveNotify
+  workflow:
+      url: http://192.168.1.8:9090/emos-workflow
 
 
 
+wx:
+  appid: wx9d64c4031ddb38f8
+  appsecret: 2d7365752dca15c723760b468fb9c5a3
 
-
-
+logging:
+  level:
+    com.example.emos.wx.task: DEBUG
