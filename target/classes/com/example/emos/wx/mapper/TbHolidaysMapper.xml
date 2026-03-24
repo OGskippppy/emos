@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.emos.wx.mapper.TbHolidaysMapper">
+
+   <select id="seachTodayIsHoliday" resultType="Integer">
+       SELECT id FROM tb_holidays where date = CURRENT_DATE limit 1;
+   </select>
+    <select id="searchHolidaysInRange" parameterType="HashMap" resultType="ArrayList">
+        SELECT date
+        FROM tb_holidays
+        WHERE date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY date
+    </select>
+
+</mapper>

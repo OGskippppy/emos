@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.emos.wx.mapper.TbWorkdayMapper">
+
+    <select id="seachTodayIsWorkday" resultType="Integer">
+        SELECT id FROM tb_workday where date = CURRENT_DATE limit 1;
+    </select>
+    <select id="searchWorkdayInRange" parameterType="java.util.HashMap" resultType="java.util.ArrayList">
+        SELECT date FROM tb_workday WHERE date BETWEEN #{startDate} AND #{endDate}
+    </select>
+</mapper>

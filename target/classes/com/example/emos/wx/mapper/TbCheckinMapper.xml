@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.emos.wx.mapper.TbCheckinMapper">
+
+    <select id="haveCheckin" parameterType="hashmap" resultType="Integer">
+        SELECT id
+        FROM tb_checkin
+        WHERE user_id = #{userId} AND date = #{date}
+        AND create_time between #{start} AND #{end}
+        LIMIT 1;
+    </select>
+
+    <insert id="insertCheckin" parameterType="com.example.emos.wx.pojo.TbCheckin" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tb_checkin
+        SET user_id = #{userId},
+        <if test="address!=null">
+            address = #{address},
+        </if>
+        <if test="country!=null">
+            country = #{country},
+        </if>
+        <if test="province!=null">
+            province = #{province},
+        </if>
+        <if test="city!=null">
+            city = #{city},
+        </if>
+        <if test="district!=null">
+            district = #{district},
+        </if>
+        status=#{status},
+        <if test="risk!=null">
+            risk = #{risk},
+        </if>
+        date = #{date},
+        create_time = #{createTime}
+    </insert>
+    
+    <resultMap id="UserInfoDTOResultMap" type="com.example.emos.wx.pojo.UserInfoDTO">
+        <result column="name" property="name" />
+        <result column="photo" property="photo" />
+        <result column="deptName" property="deptName" />
+    </resultMap>
+
+    <select id="searchUserInfo" parameterType="int" resultMap="UserInfoDTOResultMap">
+        SELECT u.name, u.photo, d.dept_name AS deptName
+        FROM tb_user u
+        LEFT JOIN tb_dept d ON u.dept_id = d.id
+        WHERE u.id = #{userId} AND u.status = 1
+    </select>
+
+    <select id="searchTodayCheckin" parameterType="int" resultType="hashmap">
+        SELECT
+            ck.address,
+            CASE
+                WHEN ck.status = 1 THEN '正常'
+                WHEN ck.status = 2 THEN '迟到'
+            END AS status,
+            ck.risk,
+            DATE_FORMAT(ck.create_time, '%H:%i') AS checkinTime,
+            DATE_FORMAT(ck.date, '%Y年%m月%d日') AS date
+        FROM tb_checkin ck
+        WHERE ck.user_id = #{userId} AND ck.date = CURRENT_DATE
+    </select>
+    
+    <select id="searchCheckinDays" parameterType="int" resultType="long">
+        SELECT COUNT(*) AS count
+        FROM tb_checkin
+        WHERE user_id=#{userId}
+    </select>
+
+    <select id="searchWeekCheckin" parameterType="HashMap" resultType="hashmap">
+        SELECT CAST(date AS CHAR) AS date,
+               IF(status = 1, '正常', '迟到') AS status
+        FROM tb_checkin
+        WHERE user_id = #{userId}
+          AND date BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+
+
+</mapper>

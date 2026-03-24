@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.emos.wx.mapper.TbCityMapper">
+
+    <resultMap id="BaseResultMap" type="com.example.emos.wx.pojo.TbCity">
+            <id property="id" column="id" />
+            <result property="city" column="city" />
+            <result property="code" column="code" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,city,code
+    </sql>
+</mapper>
