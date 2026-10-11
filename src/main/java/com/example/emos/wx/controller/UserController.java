@@ -79,13 +79,16 @@ public class UserController {
         
         Set<String> permissions = userService.searchUserPermissions(id);
         log.info("權限查詢成功: {}", permissions);
-        
         redisTemplate.opsForValue().set("token:" + token, id + "", cacheExpire, TimeUnit.DAYS);
-        
+
+        List<String> roleNames = userService.searchUserRoleNames(id);
+        log.info("用戶角色查詢成功: userId={}, roles={}", id, roleNames);
+
         Map<String, Object> data = new HashMap<>();
         data.put("token", token);
         data.put("permission", permissions);
-        
+        data.put("role", roleNames);
+
         log.info("登錄響應數據: {}", data);
         return Result.success(data);
     }

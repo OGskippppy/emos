@@ -68,8 +68,8 @@ public class MessageDao {
                 ),
                 // 映射所有需要的字段，注意MongoDB中字段名是大写的Msg
                 Aggregation.project()
-                    .andInclude("id", "senderId", "senderName", "senderPhoto", "sendTime", "ref") // 使用已创建的字符串id
-                    .and("Msg").as("msg"), // 将大写的Msg字段映射为小写的msg
+                    .andInclude("id", "senderId", "senderName", "senderPhoto", "sendTime", "ref", "msg") ,// 使用已创建的字符串id
+                    // 将大写的Msg字段映射为小写的msg
                 Aggregation.sort(Sort.by(Sort.Direction.DESC, "sendTime")),
                 Aggregation.skip(start),
                 Aggregation.limit(length)

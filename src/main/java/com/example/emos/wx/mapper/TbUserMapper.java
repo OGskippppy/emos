@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,11 +40,13 @@ public interface TbUserMapper extends BaseMapper<TbUser> {
 
     public HashMap searchUserInfo(int userId);
 
-    public int searchDeptManagerId(int id);
+    public Integer searchDeptManagerId(int id);
 
     public int searchGmId();
     
     public ArrayList<HashMap> selectUserPhotoAndName(ArrayList<Integer> param);
+
+    public List<String> searchUserRoleNames(@Param("userId") int userId);
 }
 
 

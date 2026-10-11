@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
 * @author Li
@@ -34,6 +35,8 @@ public interface TbMeetingMapper extends BaseMapper<TbMeeting> {
     int updateMeetingInfo(HashMap param);
 
     public int deleteMeetingById(int id);
+
+    List<String> searchUserMeetingInMonth(HashMap param);
 }
 
 

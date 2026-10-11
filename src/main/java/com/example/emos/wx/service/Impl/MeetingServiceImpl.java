@@ -16,13 +16,19 @@ import com.example.emos.wx.mapper.TbUserMapper;
 import com.example.emos.wx.pojo.TbMeeting;
 import com.example.emos.wx.service.MeetingService;
 import com.example.emos.wx.service.UserService;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 
+import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -105,7 +111,7 @@ public class MeetingServiceImpl implements MeetingService {
         json.set("openId", userInfo.get("openId"));
         json.set("date",date);
         json.set("start", start.length() == 5 ? start + ":00" : start); // 确保时间格式为HH:mm:ss
-        json.set("url", "http://192.168.1.6:8080/emos-wx-api/meeting/recieveNotify"); // 添加回调URL
+        json.set("url", recievceNotify); // 添加回调URL
         json.set("code", "MEETING"); // 业务类型标识（接口验证用）
         json.set("meetingType", meeting.getType() == 1 ? "线上会议" : "线下会议"); // 添加会议类型
         json.set("tcode", String.format("%06d", (int)(Math.random() * 1000000))); // 生成随机6位数字验证码
@@ -124,6 +130,10 @@ public class MeetingServiceImpl implements MeetingService {
             json.set("gmId",gmId);
             Boolean bool = tbMeetingMapper.searchMeetingMembersInSameDept(uuid);
             json.set("sameDept",bool);
+        } else {
+            // 总经理也走审批流程，设置gmId为自己，等待自己审批
+            json.set("gmId", creatorId);
+            json.set("managerId", creatorId);
         }
         String url = workflow + "/workflow/startMeetingProcess";
         log.info("准备调用workflow服务，URL: {}", url);
@@ -260,5 +270,9 @@ public class MeetingServiceImpl implements MeetingService {
 
     }
 
+    public List<String> searchUserMeetingInMonth(HashMap param) {
+        List<String> list=tbMeetingMapper.searchUserMeetingInMonth(param);
+        return list;
+    }
 
 }

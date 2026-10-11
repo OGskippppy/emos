@@ -1,0 +1,77 @@
+graph TB
+    Start([客户端发起请求]) --> CheckPath{检查请求路径}
+    
+    CheckPath -->|登录/注册等公开接口| AllowAccess[直接放行 anon]
+    CheckPath -->|需要认证的接口| FilterChain[进入Shiro过滤器链]
+    
+    FilterChain --> OAuth2Filter[OAuth2Filter拦截]
+    
+    OAuth2Filter --> IsOptions{是否OPTIONS请求?}
+    IsOptions -->|是| CORSReturn[返回CORS头,直接放行]
+    IsOptions -->|否| GetToken[从Header/Param获取Token]
+    
+    GetToken --> TokenEmpty{Token是否为空?}
+    TokenEmpty -->|是| Return401_1[返回401: 无效的令牌]
+    TokenEmpty -->|否| ClearThreadLocal[清除ThreadLocal旧Token]
+    
+    ClearThreadLocal --> VerifyJWT[验证JWT Token]
+    
+    VerifyJWT --> JWTValid{JWT是否有效?}
+    
+    JWTValid -->|有效| ExecuteLogin[执行executeLogin]
+    
+    JWTValid -->|过期 TokenExpiredException| CheckRedis{检查Redis中<br/>是否存在该Token?}
+    CheckRedis -->|存在| RefreshToken[自动刷新Token流程]
+    CheckRedis -->|不存在| Return401_2[返回401: 令牌已过期]
+    
+    JWTValid -->|签名异常| Return401_3[返回401: 无效的签名]
+    
+    RefreshToken --> DeleteOld[删除Redis旧Token]
+    DeleteOld --> CreateNew[生成新JWT Token]
+    CreateNew --> SaveRedis[存入Redis<br/>key: token, value: userId]
+    SaveRedis --> SetThreadLocal[存入ThreadLocal]
+    SetThreadLocal --> ExecuteLogin
+    
+    ExecuteLogin --> RealmAuth[调用OAuth2Realm.doGetAuthenticationInfo]
+    
+    RealmAuth --> ExtractUserId[从Token中提取userId]
+    ExtractUserId --> QueryUser[查询数据库用户信息]
+    
+    QueryUser --> UserExists{用户是否存在?}
+    UserExists -->|不存在| ThrowLocked[抛出LockedAccountException]
+    UserExists -->|存在| CreateAuthInfo[创建AuthenticationInfo]
+    
+    CreateAuthInfo --> AuthSuccess[认证成功]
+    
+    AuthSuccess --> ControllerAction[进入Controller方法]
+    
+    ControllerAction --> HasPermission{是否有<br/>@RequiresPermissions注解?}
+    HasPermission -->|有| CheckPermission[调用doGetAuthorizationInfo<br/>检查用户权限]
+    HasPermission -->|无| ExecuteMethod[执行业务逻辑]
+    
+    CheckPermission --> PermGranted{权限是否足够?}
+    PermGranted -->|是| ExecuteMethod
+    PermGranted -->|否| Return403[返回403: 权限不足]
+    
+    ExecuteMethod --> BuildResponse[构建响应数据]
+    BuildResponse --> End([返回结果给客户端])
+    
+    Return401_1 --> End
+    Return401_2 --> End
+    Return401_3 --> End
+    ThrowLocked --> ErrorHandle[全局异常处理]
+    ErrorHandle --> End
+    Return403 --> End
+    CORSReturn --> End
+    AllowAccess --> End
+    
+    style Start fill:#e1f5ff
+    style End fill:#e1f5ff
+    style OAuth2Filter fill:#fff4e6
+    style RealmAuth fill:#fff4e6
+    style RefreshToken fill:#d4edda
+    style ExecuteLogin fill:#d4edda
+    style Return401_1 fill:#f8d7da
+    style Return401_2 fill:#f8d7da
+    style Return401_3 fill:#f8d7da
+    style Return403 fill:#f8d7da

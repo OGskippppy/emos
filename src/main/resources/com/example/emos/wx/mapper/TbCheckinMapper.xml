@@ -72,11 +72,19 @@
     </select>
 
     <select id="searchWeekCheckin" parameterType="HashMap" resultType="hashmap">
-        SELECT CAST(date AS CHAR) AS date,
-               IF(status = 1, '正常', '迟到') AS status
-        FROM tb_checkin
-        WHERE user_id = #{userId}
-          AND date BETWEEN #{startDate} AND #{endDate}
+        SELECT CAST(ck.date AS CHAR) AS date,
+               CASE
+                   WHEN ck.status = 1 THEN '正常'
+                   WHEN ck.status = 2 THEN '迟到'
+                   ELSE '缺勤'
+               END AS status,
+               CASE
+                   WHEN DAYOFWEEK(ck.date) IN (1, 7) THEN '休息日'
+                   ELSE '工作日'
+               END AS type
+        FROM tb_checkin ck
+        WHERE ck.user_id = #{userId}
+          AND ck.date BETWEEN #{startDate} AND #{endDate}
     </select>
 
 

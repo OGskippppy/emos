@@ -1,5 +1,6 @@
 package com.example.emos.wx.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.emos.wx.controller.form.CheckinForm;
 import org.springframework.stereotype.Service;
 

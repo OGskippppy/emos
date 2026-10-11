@@ -120,7 +120,7 @@
         WHERE u.id = #{userId} AND u.status = 1
     </select>
 
-    <select id="searchDeptManagerId" resultType="int" parameterType="int">
+    <select id="searchDeptManagerId" resultType="java.lang.Integer" parameterType="int">
         SELECT
             u2.id
         FROM tb_user u1 JOIN tb_user u2 ON u1.dept_id = u2.dept_id
@@ -139,12 +139,19 @@
     </select>
 
     <select id="selectUserPhotoAndName" parameterType="list" resultType="HashMap">
-        SELECT 
+        SELECT
         id,name,photo
         FROM tb_user
-        WHERE status = 1 AND id IN 
+        WHERE status = 1 AND id IN
         <foreach collection="list" open="(" close=")" item="one" separator=",">
             #{one}
         </foreach>
+    </select>
+
+    <select id="searchUserRoleNames" resultType="String">
+        SELECT r.role_name
+        FROM tb_user u
+        JOIN tb_role r ON JSON_CONTAINS(u.role, CAST(r.id AS CHAR))
+        WHERE u.id = #{userId} AND u.status = 1
     </select>
 </mapper>

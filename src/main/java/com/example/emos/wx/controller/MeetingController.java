@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -150,6 +151,16 @@ public class MeetingController {
         }
         ArrayList<Integer> param = (ArrayList<Integer>) JSONUtil.parseArray(form.getIds()).toList(Integer.class);
         ArrayList<HashMap> list = userService.selectUserPhotoAndName(param);
+        return Result.success(list);
+    }
+    @PostMapping("/searchUserMeetingInMonth")
+    @ApiOperation("查询某月用户的会议日期列表")
+    public Result searchUserMeetingInMonth(@Valid @RequestBody SearchUserMeetingInMonthForm form,@RequestHeader("token") String token){
+        int userId=jwtUtil.getUserId(token);
+        HashMap param=new HashMap();
+        param.put("userId",userId);
+        param.put("express",form.getYear()+"/"+form.getMonth());
+        List<String> list=meetingService.searchUserMeetingInMonth(param);
         return Result.success(list);
     }
 

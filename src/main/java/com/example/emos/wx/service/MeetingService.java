@@ -4,6 +4,7 @@ import com.example.emos.wx.pojo.TbMeeting;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public interface MeetingService {
     public void insertMeeting(TbMeeting meeting);
@@ -13,4 +14,5 @@ public interface MeetingService {
 
     public void updateMeetingInfo(HashMap  param);
     public int deleteMeetingById(int id);
+    public List<String> searchUserMeetingInMonth(HashMap param);
 }

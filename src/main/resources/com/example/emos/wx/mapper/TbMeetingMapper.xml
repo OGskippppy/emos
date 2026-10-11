@@ -37,7 +37,7 @@
             m.status,
             m.desc,
             u2.photo,
-            TIMESTAMPDIFF(HOUR,CONCAT(m.date,'',m.start),CONCAT(m.date,'',m.end)) AS hour
+            TIMESTAMPDIFF(HOUR, CONCAT(m.date, ' ', m.start), CONCAT(m.date, ' ', m.end)) AS hour
         FROM tb_meeting m
         JOIN tb_user u1 ON JSON_CONTAINS(m.members ,CAST(u1.id AS CHAR ))
         JOIN tb_user u2 ON m.creator_id = u2.id
@@ -108,6 +108,16 @@
         FROM tb_meeting m
         JOIN tb_user u ON JSON_CONTAINS(m.members,CAST(u.id AS CHAR))
         WHERE m.id = #{id} AND u.status=1
+    </select>
+    <select id="searchUserMeetingInMonth" resultType="java.lang.String">
+        SELECT
+            DISTINCT DATE_FORMAT( m.date, '%Y/%m/%d' ) AS date
+        FROM tb_meeting m
+                 JOIN tb_user u ON JSON_CONTAINS ( m.members, CAST( u.id AS CHAR ) )
+        WHERE u.id = #{userId}
+          AND u.status = 1
+          AND m.status IN(3,4)
+          AND DATE_FORMAT(m.date,'%Y/%c')=#{express}
     </select>
     <delete id="deleteMeetingById" parameterType="int">
 

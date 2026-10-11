@@ -6,6 +6,7 @@ import cn.hutool.core.date.DateRange;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
@@ -14,11 +15,9 @@ import cn.hutool.json.JSONObject;
 import com.example.emos.wx.constant.SystemConstant;
 import com.example.emos.wx.exception.EmoException;
 import com.example.emos.wx.mapper.*;
-import com.example.emos.wx.pojo.TbCheckin;
-import com.example.emos.wx.pojo.TbFaceModel;
-import com.example.emos.wx.pojo.TbUser;
-import com.example.emos.wx.pojo.UserInfoDTO;
+import com.example.emos.wx.pojo.*;
 import com.example.emos.wx.service.CheckinService;
+import com.example.emos.wx.task.MessageTask;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,6 +59,9 @@ public class CheckinServiceImpl implements CheckinService {
 
     @Value("${emos.face.checkinUrl}")
     private String checkinUrl;
+    @Autowired
+    private MessageTask messageTask;
+
     @Override
     public String validCanCheckIn(int userId, String date) {
         Integer holidayResult = tbHolidaysMapper.seachTodayIsHoliday();
@@ -137,6 +139,12 @@ public class CheckinServiceImpl implements CheckinService {
         //判断该员工是否有人脸模型
         int userId = (Integer) param.get("userId");
         log.info("用戶ID: {}", userId);
+        String faceModel = faceModelMapper.searchFaceModel(userId);
+        log.info("人臉模型: {}", faceModel != null ? "存在" : "不存在");
+        if (faceModel == null){
+            log.error("人脸模型不存在");
+            throw new RuntimeException("人脸模型不存在");
+        }
         
         // 檢查今日是否已簽到
         HashMap checkParam = new HashMap();
@@ -150,13 +158,7 @@ public class CheckinServiceImpl implements CheckinService {
             throw new EmoException("今日已簽到，請勿重複簽到");
         }
         
-        String faceModel = faceModelMapper.searchFaceModel(userId);
-        log.info("人臉模型: {}", faceModel != null ? "存在" : "不存在");
-        
-        if (faceModel == null){
-            log.error("人脸模型不存在");
-            throw new RuntimeException("人脸模型不存在");
-        }
+
         
         // 驗證人臉模型格式
         if (faceModel.contains("error") || faceModel.contains("message") || faceModel.contains("status")) {
@@ -200,37 +202,47 @@ public class CheckinServiceImpl implements CheckinService {
             log.error("人脸识别失败，HTTP狀態: {}", response.getStatus());
             throw new EmoException("人脸识别失败");
         }
-        
+
         String body = response.body();
         try {
             JSONObject obj = JSONUtil.parseObj(body);
             String msg = obj.getStr("message");
+            String statusField = obj.getStr("status");
 
-            if ("True".equalsIgnoreCase(msg)) {
+            // 判断 status 是否为 success，这是最稳妥的判断方式
+            if ("success".equalsIgnoreCase(statusField)) {
                 log.info("人臉識別成功，開始保存簽到記錄");
 
-                // 保存签到记录
-                String address = (String) param.get("address");
-                String country = (String) param.get("country");
-                String province = (String) param.get("province");
-                String city = (String) param.get("city");
-                String district = (String) param.get("district");
-
-                TbCheckin entity = new TbCheckin();
-                entity.setUserId(userId);
-                entity.setAddress(address);
-                entity.setCountry(country);
-                entity.setProvince(province);
-                entity.setCity(city);
-                entity.setDistrict(district);
-                entity.setStatus((int) status);
-                entity.setDate(DateUtil.today());
-                entity.setCreateTime(now);
-
-                log.info("準備插入簽到記錄: {}", entity);
                 try {
+                    // 保存签到记录
+                    String address = (String) param.get("address");
+                    String country = (String) param.get("country");
+                    String province = (String) param.get("province");
+                    String city = (String) param.get("city");
+                    String district = (String) param.get("district");
+
+                    TbCheckin entity = new TbCheckin();
+                    entity.setUserId(userId);
+                    entity.setAddress(address);
+                    entity.setCountry(country);
+                    entity.setProvince(province);
+                    entity.setCity(city);
+                    entity.setDistrict(district);
+                    entity.setStatus((int) status);
+                    entity.setDate(DateUtil.today());
+                    entity.setCreateTime(now);
+
+                    log.info("準備插入簽到記錄: {}", entity);
                     int result = tbCheckinMapper.insertCheckin(entity);
                     log.info("簽到記錄插入結果: {}", result);
+                    MessageEntity message = new MessageEntity();
+                    message.setSenderId(0);
+                    message.setSenderName("系统消息");
+                    message.setMsg("你已完成签到");
+                    message.setSendTime(new Date());
+                    message.setUuid(IdUtil.simpleUUID());
+
+                    messageTask.sendAsync(userId+"",message);
 
                     if (result <= 0) {
                         log.error("簽到記錄保存失敗");
@@ -239,12 +251,17 @@ public class CheckinServiceImpl implements CheckinService {
                 } catch (org.springframework.dao.DuplicateKeyException e) {
                     log.error("重複簽到異常: {}", e.getMessage());
                     throw new EmoException("今日已簽到，請勿重複簽到");
+                } catch (Exception dbException) {
+                    // 专门捕获数据库或业务逻辑异常
+                    log.error("保存签到记录时发生异常: ", dbException);
+                    throw new EmoException("保存签到记录失败，系统内部错误");
                 }
             } else {
                 log.error("人臉識別失敗: {}", msg);
                 throw new EmoException("签到失败: " + msg);
             }
-        } catch (Exception e) {
+        } catch (cn.hutool.json.JSONException e) {
+            // 专门捕获 JSON 解析异常
             log.error("解析人臉識別響應失敗: {}, 異常: {}", body, e.getMessage());
             throw new EmoException("人臉識別服務返回格式異常");
         }
@@ -361,8 +378,12 @@ public class CheckinServiceImpl implements CheckinService {
     @Override
     public ArrayList<HashMap> searchWeekCheckin(HashMap param) {
         ArrayList<HashMap> checkinList = tbCheckinMapper.searchWeekCheckin(param);
+        log.info("=== searchWeekCheckin 诊断 ===");
+        log.info("SQL查询结果 checkinList: {}", checkinList);
         ArrayList holidays = tbHolidaysMapper.searchHolidaysInRange(param);
+        log.info("节假日列表 holidays: {}", holidays);
         ArrayList workday = tbWorkdayMapper.searchWorkdayInRange(param);
+        log.info("工作日列表 workday: {}", workday);
         Date startDate = DateUtil.parse(param.get("startDate").toString());
         Date endDate = DateUtil.parse(param.get("endDate").toString());
         DateRange range = DateUtil.range(startDate, endDate, DateField.DAY_OF_MONTH);

@@ -165,7 +165,11 @@ public class CheckinController {
     @PostMapping("/searchMonthCheckin")
     @ApiOperation("查询月签到")
     public Result searchMonthCheckin(@RequestHeader("token") String token,@Valid@RequestBody SearchMonthCheckinForm form){
+        log.info("=== searchMonthCheckin 收到请求 ===");
+        log.info("form: year={}, month={}", form.getYear(), form.getMonth());
+
         int userId = jwtUtil.getUserId(token);
+        log.info("userId: {}", userId);
         
         String hireDateStr = userService.searchUserHiredate(userId);
         DateTime hireDate;
@@ -194,12 +198,18 @@ public class CheckinController {
         param.put("startDate",startDate.toString());
         param.put("endDate",endDate.toString());
         param.put("userId",userId);
-        
+
         ArrayList<HashMap> list = checkinService.searchMonthCheckin(param);
-        
+
+        log.info("=== searchMonthCheckin 诊断 ===");
+        log.info("userId: {}, hireDate: {}", userId, hireDateStr);
+        log.info("startDate: {}, endDate: {}", startDate, endDate);
+        log.info("list 大小: {}, 内容: {}", list.size(), list);
+
         for (HashMap one : list) {
             String type = one.get("type").toString();
             String status = one.get("status").toString();
+            log.info("日期: {}, type: {}, status: {}", one.get("date"), type, status);
             if (type.equals("工作日")){
                 if (status.equals("正常")){
                     sum_1++;
@@ -218,6 +228,7 @@ public class CheckinController {
         map.put("sum_1",sum_1);
         map.put("sum_2",sum_2);
         map.put("sum_3",sum_3);
+        log.info("最终返回给前端的 map: {}", map);
         return Result.success(map);
 
     }

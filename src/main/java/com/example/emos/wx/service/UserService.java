@@ -1,12 +1,14 @@
 package com.example.emos.wx.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.emos.wx.pojo.TbUser;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
-public interface UserService {
+public interface UserService extends IService<TbUser> {
 
     public String getOpenId(String code);
 
@@ -22,6 +24,5 @@ public interface UserService {
     public ArrayList<HashMap> searchUserGroupByDept(String keyword);
     public ArrayList<HashMap> searchMembers(ArrayList params);
     public ArrayList<HashMap> selectUserPhotoAndName(ArrayList<Integer> param);
-
-
+    public List<String> searchUserRoleNames(int userId);
 }

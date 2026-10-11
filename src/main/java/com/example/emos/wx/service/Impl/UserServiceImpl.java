@@ -5,6 +5,8 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.emos.wx.exception.EmoException;
 import com.example.emos.wx.mapper.TbDeptMapper;
 import com.example.emos.wx.mapper.TbUserMapper;
@@ -25,7 +27,7 @@ import java.math.BigInteger;
 @Slf4j
 @Service
 @Scope("prototype")
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl  extends ServiceImpl<TbUserMapper, TbUser> implements UserService {
 
     @Value("${wx.appid}")
     private String appid;
@@ -54,6 +56,8 @@ public class UserServiceImpl implements UserService {
         if (openid == null){
             throw new RuntimeException("临时凭证登陆错误");
         }
+
+
         return openid;
     }
 
@@ -90,8 +94,10 @@ public class UserServiceImpl implements UserService {
                 param.put("openId",openId);
                 param.put("nickname",nickname);
                 param.put("photo",photo);
-                param.put("role","[0]");
+                param.put("role","[1]");
                 param.put("root",1);
+                param.put("deptId",1);
+                param.put("name",nickname);
                 param.put("status",1);
                 param.put("createTime",new Date());
                 // 设置入职日期为注册当天
@@ -115,8 +121,6 @@ public class UserServiceImpl implements UserService {
                 message.setUuid(IdUtil.simpleUUID());
                 messageTask.sendAsync(id+"",message);
 
-
-                
                 if (id == null) {
                     throw new EmoException("用戶創建失敗");
                 }
@@ -127,6 +131,47 @@ public class UserServiceImpl implements UserService {
             }
         }
         //如果不是超级管理员，暂时抛出异常，因为还没有实现普通用户注册逻辑
+        // throw new EmoException("该注册码无效，请联系管理员获取正确的注册码");
+
+        // 测试注册码：注册为部门经理+总经理
+        if (registerCode.equals("123456")) {
+            String openId = getOpenId(code);
+            Map<String, Object> param = new HashMap<>();
+            param.put("openId", openId);
+            param.put("nickname", nickname);
+            param.put("photo", photo);
+            param.put("role", "[2,3]");
+            param.put("root", 0);
+            param.put("deptName", "管理部");
+            param.put("name", "李海城");
+            param.put("status", 1);
+            param.put("createTime", new Date());
+            param.put("hiredate", DateUtil.today());
+            tbUserMapper.insert(param);
+            Object idObj = param.get("id");
+            Integer id = null;
+            if (idObj instanceof BigInteger) {
+                id = ((BigInteger) idObj).intValue();
+            } else if (idObj instanceof Integer) {
+                id = (Integer) idObj;
+            } else if (idObj instanceof Long) {
+                id = ((Long) idObj).intValue();
+            }
+
+            if (id == null) {
+                throw new EmoException("用户创建失败");
+            }
+            MessageEntity message = new MessageEntity();
+            message.setSenderId(0);
+            message.setSenderName("系统消息");
+            message.setMsg("欢迎您注册Emos系统超级管理员，请及时完善个人资料");
+            message.setSendTime(new Date());
+            message.setUuid(IdUtil.simpleUUID());
+            messageTask.sendAsync(id+"",message);
+            log.info("测试用户创建成功，用户ID: {}, 用户名: OGskipppy, 角色: [2,3]", id);
+            return id;
+        }
+
         throw new EmoException("该注册码无效，请联系管理员获取正确的注册码");
     }
 
@@ -136,7 +181,7 @@ public class UserServiceImpl implements UserService {
         if (id == null){
             throw new EmoException("用户不存在");
         }
-        //messageTask.receiveAsync(id+"");
+        messageTask.receiveAsync(id+"");
         return id;
 
     }
@@ -184,8 +229,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ArrayList<HashMap> selectUserPhotoAndName(ArrayList<Integer> param) {
-
         ArrayList<HashMap> list = tbUserMapper.selectUserPhotoAndName(param);
         return list;
+    }
+
+    @Override
+    public List<String> searchUserRoleNames(int userId) {
+        return tbUserMapper.searchUserRoleNames(userId);
     }
 }

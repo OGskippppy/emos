@@ -77,13 +77,13 @@ emos:
       expire: 480
       cache-expire: 600
   face:
-    createFaceModelUrl: http://192.168.1.8:3000/create_face_model
-    checkinUrl: http://192.168.1.8:3000/checkin
+    createFaceModelUrl: http://192.168.100.129:3000/create_face_model
+    checkinUrl: http://192.168.100.129:3000/checkin
     code: 974038F061B0B5F61111
   image-folder: D:/emos/image
-  recieveNotify: http://192.168.1.6:8080/emos-wx-api/meeting/recieveNotify
+  recieveNotify: http://192.168.100.1:8080/emos-wx-api/meeting/recieveNotify
   workflow:
-      url: http://192.168.1.8:9090/emos-workflow
+      url: http://192.168.100.129:9090/emos-workflow
 
 
 

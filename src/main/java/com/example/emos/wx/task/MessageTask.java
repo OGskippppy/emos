@@ -81,6 +81,7 @@ public class MessageTask {
                         log.error("转换userId失败", e);
                         // 无法转换时尝试存储0（默认值）
                         messageRef.setReceiverId(0);
+                        
                     }
                     messageRef.setReadFlag(false);
                     messageRef.setLastFlag(true);
